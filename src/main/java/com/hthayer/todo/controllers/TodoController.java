@@ -42,7 +42,7 @@ public class TodoController {
 		if (todo == null) {
 			throw new NotFoundException("Todo with id:" + requestId + " was not found");
 		}
-		return todoRepository.findOne(requestId);
+		return todo;
 	}
 
 	@RequestMapping(value = "{requestId}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
