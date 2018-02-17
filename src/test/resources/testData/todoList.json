@@ -1,0 +1,16 @@
+{
+	"todo":[
+	{
+    	"_id":"1",
+    	"name":"Todo test item",
+    	"whatToDo": "Test a todo item",
+    	"completed":false
+    },
+    {
+    	"_id":"2",
+    	"name":"Todo test item 2",
+    	"whatToDo": "Test a second todo item",
+    	"completed":false
+    }
+    ]
+}
