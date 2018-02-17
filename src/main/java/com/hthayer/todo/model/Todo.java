@@ -10,6 +10,21 @@ public class Todo {
     private String name;
     private String whatToDo;
     private boolean completed;
+    
+    public Todo( ) { }
+    
+    public Todo( String id, String name, String whatToDo, boolean completed ) {
+    	this.id = id;
+    	this.name = name;
+    	this.whatToDo = whatToDo;
+    	this.completed = completed;
+    }
+    
+    public Todo( String name, String whatToDo, boolean completed ) {
+    	this.name = name;
+    	this.whatToDo = whatToDo;
+    	this.completed = completed;
+    }
 
     public String getId( ) {
     	return id;

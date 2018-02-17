@@ -38,18 +38,18 @@ public class TodoController {
 
 	@RequestMapping(value = "{requestId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public Todo getTodo(@PathVariable final String requestId) throws NotFoundException {
-		Todo todo = todoRepository.findOne(requestId);
+		final Todo todo = todoRepository.findOne(requestId);
 		if (todo == null) {
-			throw new NotFoundException();
+			throw new NotFoundException("Todo with id:" + requestId + " was not found");
 		}
 		return todoRepository.findOne(requestId);
 	}
 
 	@RequestMapping(value = "{requestId}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	public Todo updateTodo(@PathVariable final String requestId, @RequestBody Todo todo) throws NotFoundException {
-		Todo oldTodo = todoRepository.findOne(requestId);
+		final Todo oldTodo = todoRepository.findOne(requestId);
 		if (oldTodo == null) {
-			throw new NotFoundException();
+			throw new NotFoundException("Todo with id:" + requestId + " was not found");
 		}
 		BeanUtils.copyProperties(todo, oldTodo);
 		return todoRepository.save(oldTodo);

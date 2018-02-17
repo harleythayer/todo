@@ -3,6 +3,11 @@ package com.hthayer.todo.controllers;
 import static com.lordofthejars.nosqlunit.mongodb.MongoDbRule.MongoDbRuleBuilder.newMongoDbRule;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
+import static org.junit.Assert.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -18,7 +23,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.hthayer.todo.model.Todo;
 import com.hthayer.todo.repository.TodoRepository;
@@ -29,7 +33,7 @@ import com.lordofthejars.nosqlunit.mongodb.MongoDbRule;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
+@ActiveProfiles( "test" )
 public class TodoControllerTest {
 
 	@Rule
@@ -43,100 +47,127 @@ public class TodoControllerTest {
 
 	@Autowired
 	private MockMvc mvc;
+	
+	private final ObjectMapper mapper = new ObjectMapper();
 
 	@Test
-	@UsingDataSet(locations = { "/testData/todoList.json" }, loadStrategy = LoadStrategyEnum.CLEAN_INSERT)
+	@UsingDataSet(locations = "/testData/todoList.json", loadStrategy = LoadStrategyEnum.CLEAN_INSERT)
 	public void testCountAllTodos() throws Exception {
-		mvc.perform(MockMvcRequestBuilders.get("/")
-				.accept(MediaType.APPLICATION_JSON))
-				.andExpect(jsonPath("$", hasSize(2)));
+		mvc.perform(get("/")
+					   	.accept(MediaType.APPLICATION_JSON)
+					)
+					.andExpect(jsonPath("$", hasSize(2)));
 	}
-
+	
 	@Test
-	@UsingDataSet(locations = { "/testData/todoList.json" }, loadStrategy = LoadStrategyEnum.CLEAN_INSERT)
-	public void testdeleteEachTodo() throws Exception {
-		mvc.perform(MockMvcRequestBuilders.delete("/1")
-				.accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isOk());
-
-		mvc.perform(MockMvcRequestBuilders.get("/")
-				.accept(MediaType.APPLICATION_JSON))
-				.andExpect(jsonPath("$", hasSize(1)));
-	}
-
-	@Test
-	@UsingDataSet(locations = { "/testData/todoList.json" }, loadStrategy = LoadStrategyEnum.CLEAN_INSERT)
+	@UsingDataSet(locations = "/testData/todoList.json", loadStrategy = LoadStrategyEnum.CLEAN_INSERT)
 	public void testGetOneTodo() throws Exception {
-		mvc.perform(MockMvcRequestBuilders.get("/2")
-				.accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.name", is("Todo test item 2")))
-				.andExpect(jsonPath("$.whatToDo", is("Test a second todo item")))
-				.andExpect(jsonPath("$.completed", is(false)));
+		mvc.perform(get("/2")
+						.accept(MediaType.APPLICATION_JSON)
+					)
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.name", is("Todo test item 2")))
+					.andExpect(jsonPath("$.whatToDo", is("Test a second todo item")))
+					.andExpect(jsonPath("$.completed", is(false)));
 	}
-
+	
 	@Test
-	@UsingDataSet(locations = { "/testData/todoList.json" }, loadStrategy = LoadStrategyEnum.CLEAN_INSERT)
+	@UsingDataSet(loadStrategy = LoadStrategyEnum.DELETE_ALL)
 	public void testGetOneTodoFail() throws Exception {
-		mvc.perform(MockMvcRequestBuilders.get("/3")
-				.accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isNotFound());
+		mvc.perform(get("/3")
+						.accept(MediaType.APPLICATION_JSON)
+					)
+					.andExpect(status().isNotFound());
 	}
-	
+
 	@Test
-	@UsingDataSet(locations = {"/testData/todoList.json" }, loadStrategy = LoadStrategyEnum.CLEAN_INSERT)
+	@UsingDataSet(locations = "/testData/todoList.json", loadStrategy = LoadStrategyEnum.CLEAN_INSERT)
+	public void testdeleteATodo() throws Exception {
+		final String id = "1";
+		mvc.perform(delete("/" + id)
+						.accept(MediaType.APPLICATION_JSON)
+					)
+				   	.andExpect(status().isOk());
+		
+		//Test controller to make sure it is throwing a 404 exception
+		mvc.perform(get("/" + id)
+						.accept(MediaType.APPLICATION_JSON)
+					)
+					.andExpect(status().isNotFound());
+
+		mvc.perform(get("/")
+						.accept(MediaType.APPLICATION_JSON)
+					)
+					.andExpect(jsonPath("$", hasSize(1)));
+	}
+
+	@Test
+	@UsingDataSet(locations = "/testData/todoList.json", loadStrategy = LoadStrategyEnum.CLEAN_INSERT)
 	public void testUpdateOneTodo( ) throws Exception {
-		Todo updateTodo = new Todo( );
-		updateTodo.setId("1");
-		updateTodo.setName("updated todo");
-		updateTodo.setWhatToDo("We updated the todo item");
-		updateTodo.setCompleted( true );
+		final Todo updateTodo = new Todo( "1", "updated todo", "We updated the todo item", true );
 		
-		ObjectMapper mapper = new ObjectMapper();
 		
-		mvc.perform(MockMvcRequestBuilders.put("/1")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content( mapper.writeValueAsString(updateTodo))
-				.accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.name", is("updated todo")))
-				.andExpect(jsonPath("$.whatToDo", is("We updated the todo item")))
-				.andExpect(jsonPath("$.completed", is(true)));
 		
-		mvc.perform(MockMvcRequestBuilders.get("/1")
-				.accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.name", is("updated todo")))
-				.andExpect(jsonPath("$.whatToDo", is("We updated the todo item")))
-				.andExpect(jsonPath("$.completed", is(true)));
+		mvc.perform(put("/1")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content( mapper.writeValueAsString(updateTodo))
+						.accept(MediaType.APPLICATION_JSON)
+					)
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.name", is(updateTodo.getName())))
+					.andExpect(jsonPath("$.whatToDo", is(updateTodo.getWhatToDo())))
+					.andExpect(jsonPath("$.completed", is(updateTodo.getCompleted())));
+		
+		final Todo updatedTodo = todoRepository.findOne(updateTodo.getId());
+		assertEquals( updateTodo.getWhatToDo(), updatedTodo.getWhatToDo()	);
+		assertEquals( updateTodo.getName(), updatedTodo.getName( ) );
+		assertEquals( updateTodo.getCompleted(), updatedTodo.getCompleted() );
+		
+		mvc.perform(get("/" + updateTodo.getId())
+						.accept(MediaType.APPLICATION_JSON)
+					)
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.name", is(updateTodo.getName())))
+					.andExpect(jsonPath("$.whatToDo", is(updateTodo.getWhatToDo())))
+					.andExpect(jsonPath("$.completed", is(updateTodo.getCompleted())));
 
 	}
 	
 	@Test
+	@UsingDataSet(loadStrategy = LoadStrategyEnum.DELETE_ALL)
+	public void testUpdateOneTodoFail( ) throws Exception {
+		final Todo updateTodo = new Todo( "6", "updated todo", "We updated the todo item", true );
+				
+		mvc.perform(put("/" + updateTodo.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content( mapper.writeValueAsString(updateTodo))
+						.accept(MediaType.APPLICATION_JSON)
+					)
+					.andExpect(status().is4xxClientError());
+	}
+	
+	@Test
+	@UsingDataSet(loadStrategy = LoadStrategyEnum.DELETE_ALL)
 	public void testCreateNewTodo( ) throws Exception {
-		Todo newTodo = new Todo( );
-		newTodo.setId("1");
-		newTodo.setName("New Todo");
-		newTodo.setWhatToDo("This is a new Todo");
-		newTodo.setCompleted( true );
+		final Todo newTodo = new Todo( "5", "New Todo", "This is a new Todo we just created", true);
+				
+		mvc.perform(post("/")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content( mapper.writeValueAsString(newTodo))
+						.accept(MediaType.APPLICATION_JSON)
+					)
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.name", is(newTodo.getName())))
+					.andExpect(jsonPath("$.whatToDo", is(newTodo.getWhatToDo())))
+					.andExpect(jsonPath("$.completed", is(newTodo.getCompleted())));
 		
-		ObjectMapper mapper = new ObjectMapper();
-		
-		mvc.perform(MockMvcRequestBuilders.post("/")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content( mapper.writeValueAsString(newTodo))
-				.accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.name", is("New Todo")))
-				.andExpect(jsonPath("$.whatToDo", is("This is a new Todo")))
-				.andExpect(jsonPath("$.completed", is(true)));
-		
-		mvc.perform(MockMvcRequestBuilders.get("/1")
-				.accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.name", is("New Todo")))
-				.andExpect(jsonPath("$.whatToDo", is("This is a new Todo")))
-				.andExpect(jsonPath("$.completed", is(true)));
+		mvc.perform(get("/" + newTodo.getId())
+						.accept(MediaType.APPLICATION_JSON)
+					)
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.name", is(newTodo.getName())))
+					.andExpect(jsonPath("$.whatToDo", is(newTodo.getWhatToDo())))
+					.andExpect(jsonPath("$.completed", is(newTodo.getCompleted())));
 
 	}
 }
